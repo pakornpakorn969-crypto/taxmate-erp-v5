@@ -1,0 +1,5 @@
+taxmate_app/
+├── database.py       # จัดการฐานข้อมูล SQLite และข้อมูลตัวอย่าง (Seed Data)
+├── auth.py           # ระบบยืนยันตัวตน แฮชรหัสผ่าน และสมัครสมาชิก
+├── views.py          # รวมส่วนแสดงผลหน้าจอ (UI) ของทั้ง User และ Admin
+└── app.py            # ไฟล์หลักควบคุม Session State, Routing และนำเข้าโมดูลทั้งหมด
