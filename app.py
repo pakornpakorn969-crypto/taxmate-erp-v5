@@ -1,112 +1,146 @@
-import streamlit as st
+import json
 from database import init_db
-from auth import create_default_demo_accounts
+import streamlit as st
 import views
 
-st.set_page_config(page_title="TaxMate Enterprise ERP", page_icon="🏦", layout="wide")
+st.set_page_config(
+    page_title="TaxMate Enterprise ERP Suite",
+    page_icon="🏛️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
+# 1. Initialize DB
 init_db()
-create_default_demo_accounts()
 
+# 2. Session States
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 if "user_info" not in st.session_state:
     st.session_state.user_info = None
 if "current_page" not in st.session_state:
     st.session_state.current_page = "🏠 หน้าแรก (Landing Page)"
+if "theme_mode" not in st.session_state:
+    st.session_state.theme_mode = "light"
 
-st.sidebar.title("🏦 TaxMate ERP Suite")
+views.apply_enterprise_theme()
+
+st.sidebar.title("🏛️ TaxMate ERP")
+
+# API Key Setting for Real AI Integration
+with st.sidebar.expander("🔑 ตั้งค่า AI API Key", expanded=False):
+    api_key_input = st.text_input(
+        "Gemini API Key:",
+        type="password",
+        value=st.session_state.get("gemini_api_key", ""),
+    )
+    if api_key_input:
+        st.session_state.gemini_api_key = api_key_input
 
 if st.session_state.authenticated:
-    is_admin = st.session_state.user_info.get('role') == 'admin'
-    
-    st.sidebar.success(f"{'🛡️ SUPER ADMIN' if is_admin else '👤 USER'}\n\n**{st.session_state.user_info['company_name']}**")
-    st.sidebar.divider()
+    user = st.session_state.user_info.get("username", "User")
+    role = st.session_state.user_info.get("role", "user")
+    company = st.session_state.user_info.get("company", "Organization")
+    allowed_mods_raw = st.session_state.user_info.get("allowed_modules", "all")
 
-    if is_admin:
-        nav_options = [
-            "📊 [Admin] Dashboard ผู้บริหาร",
-            "🔒 [Admin] ล็อกงบประจำเดือน (Period Closing)",
-            "✅ [Admin] ศูนย์อนุมัติรายการ (Maker-Checker)",
-            "🔍 [Admin] ตรวจสอบธุรกรรมทั้งหมด",
-            "⚙️ [Admin] ตั้งค่าองค์กร (Company Settings)",
-            "👥 [Admin] จัดการผู้ใช้งานระบบ",
-            "📢 [Admin] ส่งประกาศข่าวสาร",
-            "🛠️ [Admin] สำรองฐานข้อมูล"
-        ]
+    st.sidebar.success(f"👤 **{user}** ({role.upper()})\n🏢 {company}")
+
+    all_user_pages = [
+        "📊 ภาพรวม & เพิ่มรายการ",
+        "📇 สมุดรายนามคู่ค้า/ลูกค้า",
+        "📑 ออกเอกสาร & ตัดรับชำระ",
+        "📦 บริหารสต็อกสินค้า",
+        "🎯 วางแผนงบประมาณ",
+        "🇹🇭 ระบบภาษีไทย (VAT/WHT)",
+        "🏦 กระทบยอดธนาคาร",
+        "💳 เบิกเงินสดย่อย",
+        "🤖 AI สแกนสลิป (OCR)",
+        "🧠 AI วิเคราะห์สุขภาพการเงิน",
+        "💬 AI CFO Virtual Advisor",
+        "📈 รายงาน Multi-Tab Export",
+        "👥 จัดการเงินเดือน (HR)",
+        "💻 ทะเบียนสินทรัพย์ (Assets)",
+    ]
+
+    if role == "admin":
+        pages = ["📊 [Admin] Dashboard ผู้บริหาร"] + all_user_pages
     else:
-        nav_options = [
-            "📊 ภาพรวม & เพิ่มรายการ",
-            "📇 สมุดรายนามคู่ค้า/ลูกค้า (Directory)",
-            "📑 ออกเอกสาร & ตัดรับชำระเงิน",
-            "🇹🇭 ระบบภาษีไทย (VAT & 50 ทวิ)",
-            "🤖 AI สแกนสลิป/ใบเสร็จ",
-            "📤 นำเข้า/ส่งออกข้อมูล (CSV)",
-            "👥 จัดการเงินเดือน (HR & Payroll)",
-            "💻 ทะเบียนสินทรัพย์ (Assets)",
-            "🛡️ โปรไฟล์ & ประวัติการใช้งาน"
-        ]
+        if allowed_mods_raw == "all":
+            pages = all_user_pages
+        else:
+            try:
+                allowed_list = json.loads(allowed_mods_raw)
+                pages = [p for p in all_user_pages if p in allowed_list]
+                if not pages:
+                    pages = all_user_pages
+            except Exception:
+                pages = all_user_pages
 
-    if st.session_state.current_page not in nav_options:
-        st.session_state.current_page = nav_options[0]
+    if st.session_state.current_page not in pages:
+        st.session_state.current_page = pages[0]
 
-    selected_page = st.sidebar.radio("📍 เมนูนำทาง:", nav_options, index=nav_options.index(st.session_state.current_page))
+    selected_page = st.sidebar.radio(
+        "📍 เมนูการใช้งาน:",
+        pages,
+        index=pages.index(st.session_state.current_page),
+    )
     st.session_state.current_page = selected_page
-    
-    st.sidebar.divider()
-    if st.sidebar.button("🚪 ออกจากระบบ (Logout)", type="primary", use_container_width=True):
+
+    if st.sidebar.button(
+        "🚪 ออกจากระบบ (Logout)", type="secondary", use_container_width=True
+    ):
         st.session_state.authenticated = False
         st.session_state.user_info = None
         st.session_state.current_page = "🏠 หน้าแรก (Landing Page)"
         st.rerun()
 
-    # Routing Admin
-    if selected_page == "📊 [Admin] Dashboard ผู้บริหาร": 
-        views.render_admin_overview()
-    elif selected_page == "🔒 [Admin] ล็อกงบประจำเดือน (Period Closing)":
-        views.render_admin_period_lock()
-    elif selected_page == "✅ [Admin] ศูนย์อนุมัติรายการ (Maker-Checker)": 
-        views.render_admin_approval_center()
-    elif selected_page == "🔍 [Admin] ตรวจสอบธุรกรรมทั้งหมด": 
-        views.render_admin_audit()
-    elif selected_page == "⚙️ [Admin] ตั้งค่าองค์กร (Company Settings)": 
-        views.render_admin_settings()
-    elif selected_page == "👥 [Admin] จัดการผู้ใช้งานระบบ": 
-        views.render_admin_users()
-    elif selected_page == "📢 [Admin] ส่งประกาศข่าวสาร": 
-        views.render_admin_broadcast()
-    elif selected_page == "🛠️ [Admin] สำรองฐานข้อมูล": 
-        views.render_admin_db_tools()
-        
-    # Routing User
-    elif selected_page == "📊 ภาพรวม & เพิ่มรายการ": 
-        views.render_financial_overview()
-    elif selected_page == "📇 สมุดรายนามคู่ค้า/ลูกค้า (Directory)":
-        views.render_client_directory()
-    elif selected_page == "📑 ออกเอกสาร & ตัดรับชำระเงิน": 
-        views.render_documents_module()
-    elif selected_page == "🇹🇭 ระบบภาษีไทย (VAT & 50 ทวิ)": 
-        views.render_thai_tax_module()
-    elif selected_page == "🤖 AI สแกนสลิป/ใบเสร็จ": 
-        views.render_slip_ocr_module()
-    elif selected_page == "📤 นำเข้า/ส่งออกข้อมูล (CSV)": 
-        views.render_import_export_module()
-    elif selected_page == "👥 จัดการเงินเดือน (HR & Payroll)": 
-        views.render_hr_payroll()
-    elif selected_page == "💻 ทะเบียนสินทรัพย์ (Assets)": 
-        views.render_assets()
-    elif selected_page == "🛡️ โปรไฟล์ & ประวัติการใช้งาน": 
-        views.render_security_audit_module()
-
 else:
-    guest_pages = ["🏠 หน้าแรก (Landing Page)", "🔑 เข้าสู่ระบบ / ลงทะเบียน"]
-    if st.session_state.current_page not in guest_pages:
-        st.session_state.current_page = guest_pages[0]
-        
-    selected_page = st.sidebar.radio("📍 เมนูเริ่มต้น:", guest_pages, index=guest_pages.index(st.session_state.current_page))
+    pages = ["🏠 หน้าแรก (Landing Page)", "🔑 เข้าสู่ระบบ / ลงทะเบียน"]
+    if st.session_state.current_page not in pages:
+        st.session_state.current_page = pages[0]
+    selected_page = st.sidebar.radio(
+        "📍 เมนูเริ่มต้น:",
+        pages,
+        index=pages.index(st.session_state.current_page),
+    )
     st.session_state.current_page = selected_page
 
-    if selected_page == "🏠 หน้าแรก (Landing Page)":
-        views.render_landing_page()
-    elif selected_page == "🔑 เข้าสู่ระบบ / ลงทะเบียน":
-        views.render_auth_page()
+# Page Router
+page = st.session_state.current_page
+
+if page == "🏠 หน้าแรก (Landing Page)":
+    views.render_landing_page()
+elif page == "🔑 เข้าสู่ระบบ / ลงทะเบียน":
+    views.render_auth_page()
+elif page == "📊 [Admin] Dashboard ผู้บริหาร":
+    views.render_admin_dashboard()
+elif page == "📊 ภาพรวม & เพิ่มรายการ":
+    views.render_financial_overview()
+elif page == "📇 สมุดรายนามคู่ค้า/ลูกค้า":
+    views.render_client_directory()
+elif page == "📑 ออกเอกสาร & ตัดรับชำระ":
+    views.render_documents_module()
+elif page == "📦 บริหารสต็อกสินค้า":
+    views.render_inventory_module()
+elif page == "🎯 วางแผนงบประมาณ":
+    views.render_budgeting_module()
+elif page == "🇹🇭 ระบบภาษีไทย (VAT/WHT)":
+    views.render_thai_tax_module()
+elif page == "🏦 กระทบยอดธนาคาร":
+    views.render_bank_reconciliation()
+elif page == "💳 เบิกเงินสดย่อย":
+    views.render_expense_claims_module()
+elif page == "🤖 AI สแกนสลิป (OCR)":
+    views.render_slip_ocr_module()
+elif page == "🧠 AI วิเคราะห์สุขภาพการเงิน":
+    views.render_ai_financial_health_module()
+elif page == "💬 AI CFO Virtual Advisor":
+    views.render_ai_cfo_advisor()
+elif page == "📈 รายงาน Multi-Tab Export":
+    views.render_import_export_module()
+elif page == "👥 จัดการเงินเดือน (HR)":
+    views.render_hr_payroll()
+elif page == "💻 ทะเบียนสินทรัพย์ (Assets)":
+    views.render_assets()
+else:
+    views.render_landing_page()

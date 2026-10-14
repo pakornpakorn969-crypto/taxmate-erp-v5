@@ -1,0 +1,16 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "🚀 Run Streamlit ERP",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/Scripts/python.exe -m streamlit run app.py",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
+

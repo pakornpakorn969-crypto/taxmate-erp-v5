@@ -1,178 +1,376 @@
+from datetime import datetime
+import hashlib
+import json
+import os
 import sqlite3
-from datetime import datetime, timedelta
-import random
+import pandas as pd
+import streamlit as st
 
-DB_NAME = "taxmate_enterprise_auth.db"
+DB_NAME = "taxmate.db"
+
 
 def get_connection():
-    return sqlite3.connect(DB_NAME)
+  """เชื่อมต่อฐานข้อมูล: ป้องกัน StreamlitSecretNotFoundError ด้วย try...except"""
+  pg_uri = ""
+  try:
+    pg_uri = st.secrets.get("POSTGRES_URL", "")
+  except Exception:
+    pg_uri = os.environ.get("DATABASE_URL", "")
 
-def log_audit(user_id, action, details=""):
+  if pg_uri:
     try:
-        conn = get_connection()
-        c = conn.cursor()
-        c.execute('''INSERT INTO audit_logs (user_id, action, details, timestamp)
-                     VALUES (?, ?, ?, ?)''', 
-                  (user_id, action, details, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        conn.commit()
-        conn.close()
+      import psycopg2
+
+      return psycopg2.connect(pg_uri)
     except Exception as e:
-        print(f"Audit log error: {e}")
+      print(f"PostgreSQL Connection Error: {e}")
+
+  return sqlite3.connect(DB_NAME, check_same_thread=False)
+
+
+def hash_password(password: str) -> str:
+  """เข้ารหัสรหัสผ่านด้วย SHA-256"""
+  return hashlib.sha256(password.encode("utf-8")).hexdigest()
+
 
 def init_db():
-    conn = get_connection()
-    c = conn.cursor()
-    
-    # 1. ตารางผู้ใช้
-    c.execute('''CREATE TABLE IF NOT EXISTS users (
+  """สร้างโครงสร้างตารางระบบทั้งหมดพร้อมระบบ Auto-Migration"""
+  conn = get_connection()
+  c = conn.cursor()
+
+  # 1. Users Table
+  c.execute("""CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
-        salt TEXT NOT NULL,
-        company_name TEXT NOT NULL,
-        role TEXT DEFAULT 'user',
-        created_at TEXT NOT NULL,
+        full_name TEXT,
+        email TEXT,
+        company TEXT,
+        department TEXT DEFAULT 'General',
+        role TEXT NOT NULL DEFAULT 'user',
+        status TEXT DEFAULT 'active',
+        allowed_modules TEXT DEFAULT 'all',
         last_login TEXT,
-        failed_attempts INTEGER DEFAULT 0,
-        lockout_until TEXT
-    )''')
+        created_at TEXT
+    )""")
 
-    # 2. ตารางธุรกรรม
-    c.execute('''CREATE TABLE IF NOT EXISTS transactions (
+  # ⚙️ Auto-Migration: เพิ่มคอลัมน์ที่ขาดให้อัตโนมัติในกรณีที่มีตาราง users เดิมอยู่แล้ว
+  for col_name, col_type in [
+      ("full_name", "TEXT"),
+      ("email", "TEXT"),
+      ("company", "TEXT"),
+      ("department", "TEXT DEFAULT 'General'"),
+      ("role", "TEXT NOT NULL DEFAULT 'user'"),
+      ("status", "TEXT DEFAULT 'active'"),
+      ("allowed_modules", "TEXT DEFAULT 'all'"),
+      ("last_login", "TEXT"),
+      ("created_at", "TEXT"),
+  ]:
+    try:
+      c.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_type}")
+    except Exception:
+      pass
+
+  # 2. Audit Logs
+  c.execute("""CREATE TABLE IF NOT EXISTS audit_logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        date TEXT NOT NULL,
-        type TEXT NOT NULL,
+        username TEXT NOT NULL,
+        action TEXT NOT NULL,
+        module TEXT,
+        details TEXT,
+        ip_address TEXT DEFAULT '127.0.0.1',
+        timestamp TEXT
+    )""")
+
+  # 3. System Settings
+  c.execute("""CREATE TABLE IF NOT EXISTS system_settings (
+        key TEXT PRIMARY KEY,
+        val TEXT,
+        updated_at TEXT
+    )""")
+
+  # 4. Announcements
+  c.execute("""CREATE TABLE IF NOT EXISTS announcements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
-        amount REAL NOT NULL,
-        wht_amount REAL DEFAULT 0,
-        wht_rate REAL DEFAULT 0,
-        vat_amount REAL DEFAULT 0,
-        is_vat INTEGER DEFAULT 0,
-        category TEXT NOT NULL,
-        account_name TEXT DEFAULT 'SCB Primary',
-        status TEXT DEFAULT 'Paid',
-        due_date TEXT,
-        client_name TEXT,
-        client_tax_id TEXT,
-        approval_status TEXT DEFAULT 'Approved',
-        attachment_file TEXT
-    )''')
+        message TEXT NOT NULL,
+        priority TEXT DEFAULT 'ปกติ',
+        target_role TEXT DEFAULT 'all',
+        created_by TEXT,
+        created_at TEXT
+    )""")
 
-    # 3. ตารางตั้งค่าองค์กร
-    c.execute('''CREATE TABLE IF NOT EXISTS company_settings (
-        id INTEGER PRIMARY KEY,
-        company_name TEXT,
-        tax_id TEXT,
-        doc_prefix TEXT,
-        approval_threshold REAL DEFAULT 50000.0
-    )''')
-
-    c.execute("SELECT COUNT(*) FROM company_settings")
-    if c.fetchone()[0] == 0:
-        c.execute("INSERT INTO company_settings (id, company_name, tax_id, doc_prefix, approval_threshold) VALUES (1, 'บริษัท สยามพาร์ทเนอร์ จำกัด', '0105550000000', 'INV-', 50000.0)")
-
-    # 4. ตารางสมุดรายชื่อลูกค้า / คู่ค้า (Client & Vendor Directory)
-    c.execute('''CREATE TABLE IF NOT EXISTS clients (
+  # 5. Core ERP Tables
+  c.execute("""CREATE TABLE IF NOT EXISTS transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        tax_id TEXT,
-        client_type TEXT DEFAULT 'Customer',
-        address TEXT,
-        phone TEXT,
-        created_at TEXT NOT NULL
-    )''')
+        user_id TEXT NOT NULL, date TEXT, type TEXT, title TEXT, 
+        amount REAL, category TEXT, approval_status TEXT DEFAULT 'Approved'
+    )""")
 
-    # 5. ตารางล็อกงบการเงินประจำเดือน (Period Lock)
-    c.execute('''CREATE TABLE IF NOT EXISTS period_locks (
+  c.execute("""CREATE TABLE IF NOT EXISTS documents (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        year_month TEXT UNIQUE NOT NULL,
-        is_locked INTEGER DEFAULT 1,
-        locked_by TEXT NOT NULL,
-        locked_at TEXT NOT NULL
-    )''')
+        user_id TEXT NOT NULL, doc_type TEXT, doc_number TEXT, issue_date TEXT, 
+        client_name TEXT, client_tax_id TEXT, items_summary TEXT, 
+        subtotal REAL, vat_amount REAL, grand_total REAL, 
+        payment_status TEXT DEFAULT 'Unpaid', created_at TEXT
+    )""")
 
-    # 6. ตารางระบบอื่นๆ
-    c.execute('''CREATE TABLE IF NOT EXISTS accounts (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, account_name TEXT NOT NULL, account_type TEXT NOT NULL, balance REAL NOT NULL)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS documents (
-        id INTEGER PRIMARY KEY AUTOINCREMENT, 
-        user_id TEXT NOT NULL, 
-        doc_type TEXT NOT NULL, 
-        doc_number TEXT NOT NULL, 
-        issue_date TEXT NOT NULL, 
-        due_date TEXT, 
-        client_name TEXT NOT NULL, 
-        client_tax_id TEXT, 
-        items_summary TEXT NOT NULL, 
-        subtotal REAL NOT NULL, 
-        vat_amount REAL DEFAULT 0, 
-        grand_total REAL NOT NULL, 
-        status TEXT DEFAULT 'Completed', 
-        payment_status TEXT DEFAULT 'Unpaid',
-        created_at TEXT NOT NULL
-    )''')
-    c.execute('''CREATE TABLE IF NOT EXISTS audit_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT NOT NULL, action TEXT NOT NULL, details TEXT, timestamp TEXT NOT NULL)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS announcements (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, message TEXT NOT NULL, priority TEXT DEFAULT 'Normal', created_by TEXT NOT NULL, created_at TEXT NOT NULL)''')
+  c.execute("""CREATE TABLE IF NOT EXISTS inventory (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL, item_code TEXT, item_name TEXT, category TEXT, 
+        qty REAL, unit TEXT, unit_price REAL, updated_at TEXT
+    )""")
 
-    # Auto Migration
-    c.execute("PRAGMA table_info(transactions)")
-    cols = [column[1] for column in c.fetchall()]
-    if 'attachment_file' not in cols:
-        c.execute("ALTER TABLE transactions ADD COLUMN attachment_file TEXT")
-    if 'approval_status' not in cols:
-        c.execute("ALTER TABLE transactions ADD COLUMN approval_status TEXT DEFAULT 'Approved'")
+  c.execute("""CREATE TABLE IF NOT EXISTS clients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL, name TEXT, tax_id TEXT, client_type TEXT, 
+        address TEXT, phone TEXT, created_at TEXT
+    )""")
 
-    c.execute("PRAGMA table_info(documents)")
-    doc_cols = [column[1] for column in c.fetchall()]
-    if 'payment_status' not in doc_cols:
-        c.execute("ALTER TABLE documents ADD COLUMN payment_status TEXT DEFAULT 'Unpaid'")
+  c.execute("""CREATE TABLE IF NOT EXISTS employees (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL, emp_id TEXT, name TEXT, position TEXT, base_salary REAL
+    )""")
 
-    conn.commit()
-    conn.close()
+  c.execute("""CREATE TABLE IF NOT EXISTS assets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL, asset_code TEXT, asset_name TEXT, purchase_date TEXT, 
+        cost REAL, useful_life INTEGER, scrap_value REAL, annual_depreciation REAL
+    )""")
 
-def seed_financial_data_for_user(username):
+  c.execute("""CREATE TABLE IF NOT EXISTS budgets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL, department TEXT, allocated_amount REAL, year_month TEXT
+    )""")
+
+  c.execute("""CREATE TABLE IF NOT EXISTS expense_claims (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL, claim_title TEXT, amount REAL, category TEXT, 
+        status TEXT DEFAULT 'Pending', created_at TEXT
+    )""")
+
+  # Seed Demo Users
+  admin_pass = hash_password("123456")
+  user_pass = hash_password("123456")
+  now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+  c.execute(
+      """INSERT OR IGNORE INTO users 
+        (username, password_hash, full_name, email, company, department, role, status, allowed_modules, created_at) 
+        VALUES ('demo_admin', ?, 'Super Administrator', 'admin@company.com', 'Tech Studio Co., Ltd.', 'Management', 'admin', 'active', 'all', ?)""",
+      (admin_pass, now_str),
+  )
+
+  c.execute(
+      """INSERT OR IGNORE INTO users 
+        (username, password_hash, full_name, email, company, department, role, status, allowed_modules, created_at) 
+        VALUES ('demo_user', ?, 'General Staff', 'user@company.com', 'Tech Studio Co., Ltd.', 'Accounting', 'user', 'active', 'all', ?)""",
+      (user_pass, now_str),
+  )
+
+  conn.commit()
+  conn.close()
+
+
+def get_all_users():
+  conn = get_connection()
+  df = pd.read_sql_query(
+      """SELECT id, username, full_name, email, company, department, role, status, allowed_modules, last_login, created_at 
+         FROM users ORDER BY id ASC""",
+      conn,
+  )
+  conn.close()
+  return df
+
+
+def add_new_user(
+    username,
+    password,
+    full_name,
+    email,
+    company,
+    department,
+    role,
+    allowed_modules,
+):
+  try:
     conn = get_connection()
     c = conn.cursor()
-    c.execute("DELETE FROM transactions WHERE user_id = ?", (username,))
-    
-    # เพิ่มคู่ค้าตัวอย่าง
-    c.execute("SELECT COUNT(*) FROM clients WHERE user_id = ?", (username,))
-    if c.fetchone()[0] == 0:
-        c.execute("INSERT INTO clients (user_id, name, tax_id, client_type, address, phone, created_at) VALUES (?, 'บริษัท สยามเทคโนโลยี จำกัด', '0105560000012', 'Customer', '123 ถนนสุขุมวิท กทม.', '02-123-4567', ?)", (username, datetime.now().strftime("%Y-%m-%d")))
-        c.execute("INSERT INTO clients (user_id, name, tax_id, client_type, address, phone, created_at) VALUES (?, 'หจก. การตลาดออนไลน์ ซัพพลาย', '0103550000099', 'Vendor', '456 ถนนพหลโยธิน กทม.', '02-987-6543', ?)", (username, datetime.now().strftime("%Y-%m-%d")))
+    pass_h = hash_password(password)
+    mods_str = (
+        json.dumps(allowed_modules, ensure_ascii=False)
+        if isinstance(allowed_modules, list)
+        else allowed_modules
+    )
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    c.execute("SELECT approval_threshold FROM company_settings WHERE id = 1")
+    c.execute(
+        """INSERT INTO users (username, password_hash, full_name, email, company, department, role, status, allowed_modules, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)""",
+        (
+            username,
+            pass_h,
+            full_name,
+            email,
+            company,
+            department,
+            role,
+            mods_str,
+            now_str,
+        ),
+    )
+    conn.commit()
+    conn.close()
+    return True, "เพิ่มผู้ใช้งานสำเร็จ!"
+  except sqlite3.IntegrityError:
+    return False, "Username นี้มีอยู่ในระบบแล้ว"
+  except Exception as e:
+    return False, f"เกิดข้อผิดพลาด: {e}"
+
+
+def update_user_status(username, status):
+  conn = get_connection()
+  c = conn.cursor()
+  c.execute(
+      "UPDATE users SET status = ? WHERE username = ?", (status, username)
+  )
+  conn.commit()
+  conn.close()
+
+
+def update_user_permissions(username, role, department, allowed_modules):
+  conn = get_connection()
+  c = conn.cursor()
+  mods_str = (
+      json.dumps(allowed_modules, ensure_ascii=False)
+      if isinstance(allowed_modules, list)
+      else allowed_modules
+  )
+  c.execute(
+      """UPDATE users SET role = ?, department = ?, allowed_modules = ? WHERE username = ?""",
+      (role, department, mods_str, username),
+  )
+  conn.commit()
+  conn.close()
+
+
+def admin_reset_password(username, new_password):
+  conn = get_connection()
+  c = conn.cursor()
+  pass_h = hash_password(new_password)
+  c.execute(
+      "UPDATE users SET password_hash = ? WHERE username = ?",
+      (pass_h, username),
+  )
+  conn.commit()
+  conn.close()
+
+
+def log_audit(
+    username, action, module="System", details="", ip_address="127.0.0.1"
+):
+  try:
+    conn = get_connection()
+    c = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    c.execute(
+        """INSERT INTO audit_logs (username, action, module, details, ip_address, timestamp)
+           VALUES (?, ?, ?, ?, ?, ?)""",
+        (username, action, module, details, ip_address, now_str),
+    )
+    conn.commit()
+    conn.close()
+  except Exception:
+    pass
+
+
+def get_audit_logs(limit=300):
+  conn = get_connection()
+  df = pd.read_sql_query(
+      f"SELECT * FROM audit_logs ORDER BY id DESC LIMIT {limit}", conn
+  )
+  conn.close()
+  return df
+
+
+def get_database_health_stats():
+  conn = get_connection()
+  c = conn.cursor()
+  tables = [
+      "users",
+      "transactions",
+      "documents",
+      "inventory",
+      "clients",
+      "employees",
+      "assets",
+      "budgets",
+      "expense_claims",
+      "audit_logs",
+  ]
+  stats = {}
+  for tbl in tables:
+    try:
+      c.execute(f"SELECT COUNT(*) FROM {tbl}")
+      stats[tbl] = c.fetchone()[0]
+    except Exception:
+      stats[tbl] = 0
+  conn.close()
+
+  db_size_mb = 0.0
+  if os.path.exists(DB_NAME):
+    db_size_mb = os.path.getsize(DB_NAME) / (1024 * 1024)
+
+  return stats, round(db_size_mb, 2)
+
+
+def get_cover_settings():
+  try:
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT val FROM system_settings WHERE key = 'cover_config'")
     row = c.fetchone()
-    threshold = row[0] if row else 50000.0
-    
-    today = datetime.today()
-    cats_inc = ["40(2) ค่าจ้างทั่วไป", "40(6) วิชาชีพอิสระ", "40(8) ค้าขาย/บริการ"]
-    cats_exp = ["อุปกรณ์/ซอฟต์แวร์", "การตลาด/โฆษณา", "เดินทาง/ที่พัก", "ค่าใช้จ่ายทั่วไป"]
-    
-    for i in range(15):
-        days_ago = random.randint(0, 30)
-        t_date = today - timedelta(days=days_ago)
-        t_type = random.choice(["Income", "Income", "Expense"])
-        amt = random.choice([5000, 15000, 35000, 60000, 120000])
-        app_status = 'Pending' if (t_type == "Expense" and amt > threshold) else 'Approved'
-        cat = random.choice(cats_inc if t_type == "Income" else cats_exp)
-        
-        c.execute('''
-            INSERT INTO transactions (user_id, date, type, title, amount, category, approval_status, is_vat, wht_amount, wht_rate)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, 0.03)
-        ''', (username, t_date.strftime("%Y-%m-%d"), t_type, f"รายการพัฒนาระบบและที่ปรึกษา #{i+1}", amt, cat, app_status, amt*0.03))
-        
-    conn.commit()
     conn.close()
+    if row and row[0]:
+      return json.loads(row[0])
+  except Exception:
+    pass
 
-def get_audit_logs(user_id=None, is_admin=False):
-    conn = get_connection()
-    c = conn.cursor()
-    if is_admin:
-        c.execute("SELECT user_id, action, details, timestamp FROM audit_logs ORDER BY id DESC LIMIT 100")
-    else:
-        c.execute("SELECT user_id, action, details, timestamp FROM audit_logs WHERE user_id = ? ORDER BY id DESC LIMIT 50", (user_id,))
-    rows = c.fetchall()
-    conn.close()
-    return rows
+  return {
+      "badge": "GLOBAL COMPLIANCE & THAI TAX READY",
+      "title": "🏛️ TaxMate Enterprise ERP Suite",
+      "subtitle": "The Complete Financial Management & Compliance Solution",
+      "description": (
+          "ระบบศูนย์กลางบริหารการเงิน ภาษีไทย e-Tax สต็อก งบการเงินอัตโนมัติ และ"
+          " HR สำหรับองค์กรยุคใหม่"
+      ),
+      "theme_color": "#2563EB",
+  }
+
+
+def save_cover_settings(config_dict):
+  conn = get_connection()
+  c = conn.cursor()
+  now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+  c.execute(
+      """INSERT OR REPLACE INTO system_settings (key, val, updated_at) VALUES ('cover_config', ?, ?)""",
+      (json.dumps(config_dict, ensure_ascii=False), now_str),
+  )
+  conn.commit()
+  conn.close()
+
+
+def get_db_bytes():
+  if os.path.exists(DB_NAME):
+    with open(DB_NAME, "rb") as f:
+      return f.read()
+  return b""
+
+
+def restore_db_from_bytes(file_bytes):
+  try:
+    with open(DB_NAME, "wb") as f:
+      f.write(file_bytes)
+    return True, "กู้คืนฐานข้อมูลสำเร็จ!"
+  except Exception as e:
+    return False, f"เกิดข้อผิดพลาดในการกู้คืน: {e}"
