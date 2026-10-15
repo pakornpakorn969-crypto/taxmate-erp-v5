@@ -1,3 +1,4 @@
 __pycache__/
 *.db
 uploads/
+.streamlit/secrets.toml
