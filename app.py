@@ -6,19 +6,20 @@ import plotly.graph_objects as go
 import sqlite3
 import hashlib
 import json
+import io
 from datetime import datetime, timedelta
 
 # ==========================================
-# 1. ADVANCED PAGE CONFIG & MODERN ENTERPRISE THEME
+# 1. ADVANCED PAGE CONFIG & ULTRA ENTERPRISE THEME
 # ==========================================
 st.set_page_config(
-    page_title="TaxMate Enterprise ERP Suite v3.0",
-    page_icon="🖥️",
+    page_title="TaxMate Enterprise ERP Suite v4.0 Ultra",
+    page_icon="🏛️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom High-End Ultra Clean Light Theme CSS
+# Custom High-End Modern Enterprise CSS
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
@@ -32,89 +33,89 @@ st.markdown("""
         color: #0F172A;
     }
 
-    /* Landing Hero Banner */
+    /* Enterprise Hero Banner */
     .hero-container-3d {
-        background: #EFF6FF;
+        background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
         border: 1px solid #BFDBFE;
         border-radius: 24px;
-        padding: 40px 30px;
+        padding: 48px 36px;
         text-align: center;
-        margin-bottom: 25px;
-        box-shadow: 0 10px 30px rgba(37, 99, 235, 0.05);
+        margin-bottom: 28px;
+        box-shadow: 0 12px 35px rgba(37, 99, 235, 0.08);
     }
     .hero-badge-pill {
         display: inline-block;
         background: #1D4ED8;
         color: #FFFFFF;
-        font-size: 11.5px;
+        font-size: 13px;
         font-weight: 800;
-        padding: 6px 18px;
+        padding: 8px 24px;
         border-radius: 9999px;
-        letter-spacing: 0.8px;
-        margin-bottom: 18px;
-        box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25);
+        letter-spacing: 1px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 14px rgba(29, 78, 216, 0.3);
     }
     .hero-title-main {
-        font-size: 34px;
+        font-size: 42px;
         font-weight: 800;
         color: #0F172A;
-        margin: 0 0 10px 0;
-        letter-spacing: -0.5px;
+        margin: 0 0 12px 0;
+        letter-spacing: -0.8px;
     }
     .hero-subtitle-blue {
-        font-size: 16px;
+        font-size: 20px;
         font-weight: 700;
         color: #2563EB;
-        margin-bottom: 12px;
+        margin-bottom: 14px;
     }
     .hero-desc-text {
-        font-size: 13.5px;
-        color: #475569;
-        max-width: 820px;
+        font-size: 15.5px;
+        color: #334155;
+        max-width: 920px;
         margin: 0 auto;
-        line-height: 1.6;
+        line-height: 1.7;
     }
 
-    /* 3D Cube Canvas Styling */
+    /* 3D Cube Animation */
     .cube-stage {
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 260px;
+        height: 280px;
         margin: 20px 0 30px 0;
         perspective: 900px;
     }
     .orbit-ellipse {
         position: absolute;
-        width: 320px;
-        height: 120px;
+        width: 360px;
+        height: 135px;
         border: 3px solid #2563EB;
         border-radius: 50%;
         transform: rotateX(72deg) rotateY(-18deg);
-        box-shadow: 0 0 20px rgba(37, 99, 235, 0.4), inset 0 0 20px rgba(37, 99, 235, 0.3);
+        box-shadow: 0 0 22px rgba(37, 99, 235, 0.45), inset 0 0 22px rgba(37, 99, 235, 0.35);
         animation: spinOrbit 10s linear infinite;
     }
     .cube-box-3d {
-        width: 110px;
-        height: 110px;
+        width: 120px;
+        height: 120px;
         position: relative;
         transform-style: preserve-3d;
         animation: rotateCube3D 14s infinite linear;
     }
     .cube-side {
         position: absolute;
-        width: 110px;
-        height: 110px;
+        width: 120px;
+        height: 120px;
         background: rgba(59, 130, 246, 0.35);
         border: 2px solid #0284C7;
-        box-shadow: 0 0 15px rgba(2, 132, 199, 0.4);
+        box-shadow: 0 0 18px rgba(2, 132, 199, 0.45);
     }
-    .side-front  { transform: rotateY(0deg) translateZ(55px); }
-    .side-back   { transform: rotateY(180deg) translateZ(55px); }
-    .side-right  { transform: rotateY(90deg) translateZ(55px); }
-    .side-left   { transform: rotateY(-90deg) translateZ(55px); }
-    .side-top    { transform: rotateX(90deg) translateZ(55px); }
-    .side-bottom { transform: rotateX(-90deg) translateZ(55px); }
+    .side-front  { transform: rotateY(0deg) translateZ(60px); }
+    .side-back   { transform: rotateY(180deg) translateZ(60px); }
+    .side-right  { transform: rotateY(90deg) translateZ(60px); }
+    .side-left   { transform: rotateY(-90deg) translateZ(60px); }
+    .side-top    { transform: rotateX(90deg) translateZ(60px); }
+    .side-bottom { transform: rotateX(-90deg) translateZ(60px); }
 
     @keyframes rotateCube3D {
         0% { transform: rotateX(15deg) rotateY(0deg); }
@@ -131,14 +132,25 @@ st.markdown("""
         border-right: 1px solid #E2E8F0 !important;
     }
     
-    /* Authentication Card Styling */
+    /* Authentication & Modern Card Styling */
     .login-card-light {
         background: #FFFFFF;
-        padding: 32px 36px;
+        padding: 36px 42px;
         border-radius: 20px;
         border: 1px solid #E2E8F0;
         box-shadow: 0 15px 35px rgba(0, 0, 0, 0.04);
         margin-top: 10px;
+    }
+
+    /* Printable Invoice & Receipt Styling */
+    .receipt-paper {
+        background-color: #FFFFFF;
+        border: 1px dashed #CBD5E1;
+        padding: 24px;
+        border-radius: 12px;
+        font-family: 'Courier New', Courier, monospace;
+        color: #0F172A;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
     }
     
     /* Primary Coral Red Buttons */
@@ -146,9 +158,10 @@ st.markdown("""
         background-color: #FF4B4B !important;
         border-color: #FF4B4B !important;
         color: #FFFFFF !important;
-        border-radius: 10px;
+        border-radius: 12px;
         font-weight: 700;
-        padding: 10px 24px;
+        font-size: 16px !important;
+        padding: 12px 28px !important;
     }
     .stButton>button[kind="primary"]:hover, .stFormSubmitButton>button[kind="primary"]:hover {
         background-color: #E03E3E !important;
@@ -166,7 +179,7 @@ st.markdown("""
 
 
 # ==========================================
-# 2. AUTO-REPAIRING FAIL-SAFE DATABASE ENGINE
+# 2. FAIL-SAFE DATABASE ENGINE & SCHEMA BUILDER
 # ==========================================
 DB_FILE = "taxmate_erp_v3.db"
 
@@ -359,7 +372,7 @@ def init_db_v3():
         cursor.execute("SELECT COUNT(*) FROM announcements")
         if cursor.fetchone()[0] == 0:
             demo_announcements = [
-                ("📢 แจ้งอัปเดตระบบ TaxMate Enterprise ERP v3.0", "ระบบได้ทำการปรับปรุงหน้าจอ Light Mode และเพิ่มประสิทธิภาพฐานข้อมูลเรียบร้อยแล้ว", "Normal", "All", "Active", "ฝ่ายไอทีและระบบ"),
+                ("📢 แจ้งอัปเดตระบบ TaxMate Enterprise ERP v4.0 Ultra", "ระบบได้ทำการเพิ่มโมดูลวิเคราะห์พยากรณ์การเงิน ใบเสร็จอิเล็กทรอนิกส์ และเครื่องมือ AI เรียบร้อยแล้ว", "Normal", "All", "Active", "ฝ่ายไอทีและระบบ"),
                 ("🔴 กำหนดการส่งงบการเงินและยื่นภาษีประจำเดือน", "ขอให้ฝ่ายบัญชีตรวจสอบและสรุปรายงานภาษีมูลค่าเพิ่ม ภ.พ.30 ภายในวันที่ 15 ของเดือนนี้อย่างเคร่งครัด", "Urgent", "All", "Active", "ผู้บริหารสูงสุด (CEO)")
             ]
             for title, content, priority, target, status, author in demo_announcements:
@@ -404,10 +417,9 @@ init_db_v3()
 
 
 # ==========================================
-# 3. ANNOUNCEMENT CARD COMPONENT (SHARED)
+# 3. ANNOUNCEMENT CARD COMPONENT
 # ==========================================
 def render_landing_announcements():
-    """ดึงรายการประกาศสำคัญมาแสดงผลด้วยการ์ดขอบสี (ใช้ร่วมกันได้ทั้งหน้าแรก และ หน้า Admin)"""
     try:
         conn = get_db_connection()
         query = "SELECT * FROM announcements WHERE status = 'Active' AND target_role = 'All' ORDER BY id DESC"
@@ -415,7 +427,7 @@ def render_landing_announcements():
         conn.close()
         
         if not df_anc.empty:
-            st.markdown("<h4 style='color: #1E293B; font-weight: 800; margin-top: 20px; margin-bottom: 15px;'>📢 ประกาศสำคัญจากองค์กร (Latest Announcements)</h4>", unsafe_allow_html=True)
+            st.markdown("<h3 style='color: #1E293B; font-weight: 800; margin-top: 25px; margin-bottom: 18px; font-size: 24px;'>📢 ประกาศสำคัญจากองค์กร (Latest Announcements)</h3>", unsafe_allow_html=True)
             for idx, row in df_anc.iterrows():
                 p = row.get("priority", "Normal")
                 card_style = "background: #FFFFFF; border-left: 6px solid #2563EB; border-top: 1px solid #E2E8F0; border-right: 1px solid #E2E8F0; border-bottom: 1px solid #E2E8F0;"
@@ -431,12 +443,12 @@ def render_landing_announcements():
                     icon_title = "⚠️"
                 
                 st.markdown(f"""
-                <div style="{card_style} border-radius: 14px; padding: 18px 24px; margin-bottom: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <strong style="font-size: 16px; color: #0F172A;">{icon_title} {row['title']}</strong>
-                        <span style="font-size: 12px; font-weight: 700; color: #475569;">{badge} • โดย {row['created_by']} ({row['created_at']})</span>
+                <div style="{card_style} border-radius: 16px; padding: 20px 28px; margin-bottom: 18px; box-shadow: 0 4px 18px rgba(0,0,0,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <strong style="font-size: 18px; color: #0F172A;">{icon_title} {row['title']}</strong>
+                        <span style="font-size: 13px; font-weight: 700; color: #475569;">{badge} • โดย {row['created_by']} ({row['created_at']})</span>
                     </div>
-                    <div style="font-size: 14px; color: #334155; line-height: 1.6;">{row['content']}</div>
+                    <div style="font-size: 15px; color: #334155; line-height: 1.6;">{row['content']}</div>
                 </div>
                 """, unsafe_allow_html=True)
     except Exception:
@@ -451,12 +463,11 @@ if "authenticated" not in st.session_state:
     st.session_state.user = None
 
 if not st.session_state.authenticated:
-    # Sidebar Navigation for Unauthenticated Visitors
     with st.sidebar:
         st.markdown("""
-        <div style="padding: 10px 0 15px 0;">
-            <div style="font-size: 38px; margin-bottom: 4px;">🌐🔑</div>
-            <h3 style="margin: 0; color: #0F172A; font-weight: 800; font-size: 20px;">TaxMate ERP</h3>
+        <div style="padding: 12px 0 18px 0;">
+            <div style="font-size: 45px; margin-bottom: 4px;">🏛️</div>
+            <h2 style="margin: 0; color: #0F172A; font-weight: 800; font-size: 24px;">TaxMate ERP</h2>
         </div>
         """, unsafe_allow_html=True)
         
@@ -467,7 +478,7 @@ if not st.session_state.authenticated:
         
         st.divider()
         st.markdown("""
-        <div style="font-size: 13px; color: #475569; line-height: 1.8;">
+        <div style="font-size: 14px; color: #475569; line-height: 1.8;">
             🟢 <b>สถานะเซิร์ฟเวอร์:</b> ออนไลน์ 24/7<br>
             ☁️ <b>ผู้ให้บริการ:</b> Render Cloud
         </div>
@@ -477,11 +488,11 @@ if not st.session_state.authenticated:
     if init_nav == "🏠 หน้าแรก (หน้าต้อนรับ 3 มิติ)":
         st.markdown("""
         <div class="hero-container-3d">
-            <span class="hero-badge-pill">🥷 NEXT-GEN 3D ENTERPRISE ERP ENGINE</span>
+            <span class="hero-badge-pill">🏛️ NEXT-GEN 3D ENTERPRISE ERP ENGINE v4.0</span>
             <div class="hero-title-main">🏛️ TaxMate Enterprise ERP Suite</div>
             <div class="hero-subtitle-blue">The Interactive 3D Cloud Financial & Compliance Platform</div>
             <div class="hero-desc-text">
-                ศูนย์กลางบริหารจัดการบัญชี ภาษีไทย e-Tax สต็อกหลายสาขา การผลิต CRM และทรัพยากรมนุษย์ ด้วยสถาปัตยกรรมระดับองค์กรชั้นนำ
+                ศูนย์กลางบริหารจัดการบัญชี ภาษีไทย e-Tax สต็อกหลายสาขา การผลิต CRM และทรัพยากรมนุษย์ พร้อมระบบ AI พยากรณ์ทางการเงินระดับองค์กรชั้นนำ
             </div>
         </div>
         
@@ -501,14 +512,14 @@ if not st.session_state.authenticated:
 
         render_landing_announcements()
 
-    # Page 2: AUTHENTICATION CENTER (ศูนย์ยืนยันตัวตน)
+    # Page 2: AUTHENTICATION CENTER
     else:
         st.markdown("""
-        <div style="margin-bottom: 25px;">
-            <h2 style="color: #0F172A; font-size: 30px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 8px;">
+        <div style="margin-bottom: 28px;">
+            <h1 style="color: #0F172A; font-size: 34px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 10px;">
                 🔑 ศูนย์ยืนยันตัวตน (Authentication Center)
-            </h2>
-            <p style="color: #64748B; font-size: 14px; margin-top: 5px;">ระบบเข้าสู่ระบบ ลงทะเบียน และกู้คืนรหัสผ่านสำหรับพนักงานและผู้ดูแลระบบ</p>
+            </h1>
+            <p style="color: #64748B; font-size: 15px; margin-top: 6px;">ระบบเข้าสู่ระบบ ลงทะเบียน และกู้คืนรหัสผ่านสำหรับพนักงานและผู้ดูแลระบบ</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -518,13 +529,13 @@ if not st.session_state.authenticated:
             "🔑 ลืมรหัสผ่าน (Forgot Password)"
         ])
         
-        # TAB 1: LOGIN (SIGN IN)
+        # TAB 1: LOGIN
         with tab_login:
             col1, col2, col3 = st.columns([1, 1.4, 1])
             with col2:
                 st.markdown('<div class="login-card-light">', unsafe_allow_html=True)
                 with st.form("login_form_v3"):
-                    st.markdown("<h3 style='color: #0F172A; font-weight: 800; font-size: 26px; margin-bottom: 22px;'>ลงชื่อเข้าใช้งานระบบ (Sign In)</h3>", unsafe_allow_html=True)
+                    st.markdown("<h2 style='color: #0F172A; font-weight: 800; font-size: 28px; margin-bottom: 24px;'>ลงชื่อเข้าใช้งานระบบ (Sign In)</h2>", unsafe_allow_html=True)
                     login_user = st.text_input("ชื่อผู้ใช้งาน (Username)", value="admin")
                     login_pwd = st.text_input("รหัสผ่าน (Password)", type="password", value="admin123")
                     
@@ -556,10 +567,10 @@ if not st.session_state.authenticated:
                             st.error(f"เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์: {str(e)}")
                 st.markdown('</div>', unsafe_allow_html=True)
 
-        # TAB 2: REGISTER (SIGN UP - MATCHING IMAGE 1)
+        # TAB 2: REGISTER
         with tab_signup:
             st.markdown('<div class="login-card-light">', unsafe_allow_html=True)
-            st.markdown("<h3 style='color: #0F172A; font-weight: 800; font-size: 24px; margin-bottom: 20px;'>ลงทะเบียนผู้ใช้งานใหม่</h3>", unsafe_allow_html=True)
+            st.markdown("<h2 style='color: #0F172A; font-weight: 800; font-size: 26px; margin-bottom: 22px;'>ลงทะเบียนผู้ใช้งานใหม่</h2>", unsafe_allow_html=True)
             
             with st.form("signup_form_v3"):
                 col_reg1, col_reg2 = st.columns(2)
@@ -616,7 +627,6 @@ if not st.session_state.authenticated:
                                 """, (reg_user, hash_password(reg_pwd1), reg_name, reg_role, reg_dept, reg_email))
                                 conn.commit()
                                 
-                                # Fetch newly created user object
                                 cursor.execute("SELECT * FROM users WHERE username = ?", (reg_user,))
                                 new_user = cursor.fetchone()
                                 conn.close()
@@ -642,7 +652,7 @@ if not st.session_state.authenticated:
             with col2:
                 st.markdown('<div class="login-card-light">', unsafe_allow_html=True)
                 with st.form("forgot_form_v3"):
-                    st.markdown("<h3 style='color: #0F172A; font-weight: 800; font-size: 24px; margin-bottom: 20px;'>กู้คืน/ตั้งรหัสผ่านใหม่ (Forgot Password)</h3>", unsafe_allow_html=True)
+                    st.markdown("<h2 style='color: #0F172A; font-weight: 800; font-size: 26px; margin-bottom: 22px;'>กู้คืน/ตั้งรหัสผ่านใหม่ (Forgot Password)</h2>", unsafe_allow_html=True)
                     fg_user = st.text_input("ชื่อผู้ใช้งาน (Username)")
                     fg_email = st.text_input("อีเมลที่ลงทะเบียนไว้")
                     
@@ -684,7 +694,7 @@ if not st.session_state.authenticated:
 
 
 # ==========================================
-# 5. AUTHENTICATED BACK-OFFICE DASHBOARD (20 MODULES)
+# 5. AUTHENTICATED BACK-OFFICE DASHBOARD
 # ==========================================
 user_info = st.session_state.user
 user_role = user_info.get("role", "Executive")
@@ -692,14 +702,15 @@ user_name = user_info.get("full_name", "ผู้ใช้งาน")
 user_dept = user_info.get("department", "ทั่วไป")
 
 ALL_MODULES = [
-    {"id": "exec", "title": "📊 ผู้บริหาร (Executive Dashboard)", "roles": ["Executive"]},
+    {"id": "exec", "title": "📊 ผู้บริหาร (Executive Dashboard & AI Forecast)", "roles": ["Executive"]},
     {"id": "acc", "title": "💰 บัญชีและการเงิน (Accounting & Finance)", "roles": ["Executive", "Accounting"]},
-    {"id": "tax_inv", "title": "🧾 ออกใบกำกับภาษี/ใบเสร็จ (Tax Invoices)", "roles": ["Executive", "Accounting", "POS"]},
-    {"id": "pos", "title": "🛒 ระบบหน้าร้าน (POS System)", "roles": ["Executive", "POS"]},
+    {"id": "tax_inv", "title": "🧾 ออกใบกำกับภาษี/ใบเสร็จ (e-Tax & Printable Invoice)", "roles": ["Executive", "Accounting", "POS"]},
+    {"id": "pos", "title": "🛒 ระบบหน้าร้าน (POS System & Receipt Generator)", "roles": ["Executive", "POS"]},
     {"id": "inv", "title": "📦 บริหารคลังสินค้า (Inventory Management)", "roles": ["Executive", "Accounting", "POS"]},
     {"id": "hr", "title": "👥 ทรัพยากรบุคคลและเงินเดือน (HR & Payroll)", "roles": ["Executive", "HR"]},
-    {"id": "fin_ana", "title": "📈 วิเคราะห์งบการเงิน (Financial Analytics)", "roles": ["Executive", "Accounting"]},
+    {"id": "fin_ana", "title": "📈 วิเคราะห์งบและสุขภาพการเงิน (Financial Health Ratios)", "roles": ["Executive", "Accounting"]},
     {"id": "tax_alert", "title": "🔔 ระบบแจ้งเตือนภาษี (Tax Alerts & LINE)", "roles": ["Executive", "Accounting"]},
+    {"id": "fx_trade", "title": "💱 อัตราแลกเปลี่ยนและอนุมัติการค้า (Multi-Currency Trade)", "roles": ["Executive", "Accounting"]},
     {"id": "logistics", "title": "🚚 ระบบขนส่งและโลจิสติกส์ (Logistics)", "roles": ["Executive", "POS"]},
     {"id": "mfg", "title": "🏭 ระบบการผลิต (Manufacturing ERP)", "roles": ["Executive", "Accounting"]},
     {"id": "crm", "title": "🤝 บริหารความสัมพันธ์ลูกค้า (CRM)", "roles": ["Executive", "POS"]},
@@ -711,10 +722,9 @@ ALL_MODULES = [
     {"id": "vat", "title": "📊 รายงานภาษีมูลค่าเพิ่ม (VAT Report)", "roles": ["Executive", "Accounting"]},
     {"id": "wht", "title": "📑 รายงานภาษีหัก ณ ที่จ่าย (WHT Report)", "roles": ["Executive", "Accounting"]},
     {"id": "branch", "title": "🌐 บริหารหลายสาขา (Multi-Branch)", "roles": ["Executive"]},
-    {"id": "setting", "title": "⚙️ ตั้งค่าระบบและประกาศ (System Settings)", "roles": ["Executive"]}
+    {"id": "setting", "title": "⚙️ ตั้งค่าระบบ สำรองฐานข้อมูล และประกาศ (System Settings)", "roles": ["Executive"]}
 ]
 
-# Dynamic Sequential Renumbering per Role
 allowed_list = [m for m in ALL_MODULES if user_role == "Executive" or user_role in m["roles"]]
 if not allowed_list:
     allowed_list = ALL_MODULES
@@ -724,9 +734,9 @@ menu_map = {f"{i+1}. {m['title']}": m for i, m in enumerate(allowed_list)}
 
 with st.sidebar:
     st.markdown("""
-    <div style="text-align: center; padding: 10px 0 16px 0;">
-        <h2 style="margin:0; font-size: 22px; color: #2563EB; font-weight: 800;">⚡ TaxMate Light</h2>
-        <span style="background: #DCFCE7; color: #15803D; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700;">v3.0 Enterprise Live</span>
+    <div style="text-align: center; padding: 12px 0 18px 0;">
+        <h2 style="margin:0; font-size: 24px; color: #2563EB; font-weight: 800;">🏛️ TaxMate ERP</h2>
+        <span style="background: #DCFCE7; color: #15803D; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;">v4.0 Ultra Edition</span>
     </div>
     """, unsafe_allow_html=True)
     
@@ -748,14 +758,14 @@ with st.sidebar:
 
 # Header Banner
 st.markdown(f"""
-<div style="background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); padding: 22px 30px; border-radius: 18px; color: #FFFFFF; margin-bottom: 20px;">
-    <h2 style="margin: 0; font-size: 26px; font-weight: 800;">{selected_label}</h2>
-    <div style="font-size: 13.5px; opacity: 0.9; margin-top: 4px;">TaxMate Enterprise ERP v3.0 • ระบบบริหารจัดการองค์กร บัญชี และภาษีแบบนิเวศน์ดิจิทัล</div>
+<div style="background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%); padding: 26px 36px; border-radius: 20px; color: #FFFFFF; margin-bottom: 24px; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.15);">
+    <h1 style="margin: 0; font-size: 32px; font-weight: 800;">{selected_label}</h1>
+    <div style="font-size: 15px; opacity: 0.92; margin-top: 6px;">TaxMate Enterprise ERP v4.0 Ultra • ระบบบริหารจัดการองค์กร บัญชี และภาษีแบบนิเวศน์ดิจิทัล</div>
 </div>
 """, unsafe_allow_html=True)
 
 
-# MODULE 1: EXECUTIVE DASHBOARD
+# MODULE 1: EXECUTIVE DASHBOARD & AI FINANCIAL FORECAST
 if selected_id == "exec":
     try:
         conn = get_db_connection()
@@ -776,18 +786,36 @@ if selected_id == "exec":
 
         st.markdown("<br>", unsafe_allow_html=True)
         col1, col2 = st.columns([2.2, 1])
+        
         with col1:
-            st.subheader("📈 วิเคราะห์แนวโน้มรายได้ (Revenue Trend)")
-            months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค."]
-            rev_data = [150000, 210000, 180000, 260000, 340000, 370000, 320000, 390000, 450000, net_sales if net_sales > 0 else 520000]
-            fig_line = px.area(x=months, y=rev_data, labels={'x': 'เดือน', 'y': 'ยอดขาย (บาท)'}, color_discrete_sequence=['#2563EB'])
-            st.plotly_chart(fig_line, use_container_width=True)
+            st.subheader("🤖 AI Financial Predictive Forecast (ทำนายรายได้ล่วงหน้า 6 เดือน)")
+            months_hist = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค."]
+            hist_sales = [150000, 210000, 180000, 260000, 340000, 370000, 320000, 390000, 450000, net_sales if net_sales > 0 else 520000]
+            
+            # Predictive Trend Calculation
+            months_forecast = ["พ.ย.", "ธ.ค.", "ม.ค. (ปีถัดไป)", "ก.พ. (ปีถัดไป)", "มี.ค. (ปีถัดไป)", "เม.ย. (ปีถัดไป)"]
+            avg_growth = 1.08  # Simulated 8% monthly growth
+            last_val = hist_sales[-1]
+            forecast_sales = [last_val * (avg_growth ** i) for i in range(1, 7)]
+            
+            fig_fc = go.Figure()
+            fig_fc.add_trace(go.Scatter(x=months_hist, y=hist_sales, mode='lines+markers', name='รายได้จริง (Actual)', line=dict(color='#2563EB', width=3)))
+            fig_fc.add_trace(go.Scatter(x=months_forecast, y=forecast_sales, mode='lines+markers', name='ประมาณการ AI Forecast', line=dict(color='#10B981', width=3, dash='dash')))
+            fig_fc.update_layout(margin=dict(l=20, r=20, t=30, b=20), height=320)
+            st.plotly_chart(fig_fc, use_container_width=True)
 
         with col2:
-            st.subheader("🍰 สัดส่วนเอกสารการค้า")
-            if not df_sales.empty:
-                fig_pie = px.pie(df_sales, names="status", values="total", hole=0.5, color_discrete_sequence=['#16A34A', '#D97706'])
-                st.plotly_chart(fig_pie, use_container_width=True)
+            st.subheader("📊 Financial Waterfall Chart")
+            fig_wf = go.Figure(go.Waterfall(
+                name = "Financial Flow", orientation = "v",
+                measure = ["relative", "relative", "total", "relative", "total"],
+                x = ["รายได้ขาย", "ต้นทุนขาย", "กำไรขั้นต้น", "ค่าใช้จ่าย SG&A", "กำไรสุทธิ"],
+                textposition = "outside",
+                y = [net_sales if net_sales > 0 else 520000, -180000, None, -110000, None],
+                connector = {"line":{"color":"rgb(63, 63, 63)"}},
+            ))
+            fig_wf.update_layout(margin=dict(l=20, r=20, t=30, b=20), height=320)
+            st.plotly_chart(fig_wf, use_container_width=True)
                 
         st.divider()
         render_landing_announcements()
@@ -796,9 +824,9 @@ if selected_id == "exec":
         st.error(f"ข้อผิดพลาดในโมดูลผู้บริหาร: {str(e)}")
 
 
-# MODULE 2: ACCOUNTING & FINANCE (WITH DELETE SYSTEM)
+# MODULE 2: ACCOUNTING & FINANCE
 elif selected_id == "acc":
-    tab1, tab2 = st.tabs(["📒 สมุดรายวันทั่วไป", "➕ บันทึกรายการ บัญชีเดบิต/เครดิต"])
+    tab1, tab2, tab3 = st.tabs(["📒 สมุดรายวันทั่วไป", "➕ บันทึกรายการ บัญชีเดบิต/เครดิต", "📥 ส่งออกข้อมูลรายงานสมุดรายวัน (Export CSV)"])
     
     with tab1:
         st.subheader("📒 สมุดรายวันทั่วไป (General Journal Ledger)")
@@ -823,13 +851,6 @@ elif selected_id == "acc":
                         
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในการดึงข้อมูลสมุดรายวัน: {str(e)}")
-            
-        st.divider()
-        st.subheader("💵 การบริหารกระแสเงินสด (Cash Flow Analysis)")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("กระแสเงินสดรับ (Cash Inflow)", "฿985,000.00", "+22.4%")
-        c2.metric("กระแสเงินสดจ่าย (Cash Outflow)", "฿275,000.00", "-1.8%")
-        c3.metric("เงินสดคงเหลือสุทธิ (Net Cash)", "฿710,000.00", "+28.5%")
 
     with tab2:
         st.subheader("📝 บันทึกรายการลงสมุดรายวันทั่วไป")
@@ -863,10 +884,27 @@ elif selected_id == "acc":
                 except Exception as e:
                     st.error(f"เกิดข้อผิดพลาดในการบันทึกบัญชี: {str(e)}")
 
+    with tab3:
+        st.subheader("📥 ส่งออกข้อมูลสมุดรายวันทั่วไป (Export CSV)")
+        conn = get_db_connection()
+        df_exp = pd.read_sql_query("SELECT * FROM journal_entries", conn)
+        conn.close()
+        
+        csv_buffer = io.BytesIO()
+        df_exp.to_csv(csv_buffer, index=False, encoding='utf-8-sig')
+        st.download_button(
+            label="💾 ดาวน์โหลดรายงานสมุดรายวัน (.CSV)",
+            data=csv_buffer.getvalue(),
+            file_name=f"Journal_Ledger_{datetime.now().strftime('%Y%m%d')}.csv",
+            mime="text/csv",
+            type="primary"
+        )
 
-# MODULE 3: TAX INVOICES (WITH DELETE SYSTEM)
+
+# MODULE 3: TAX INVOICES & PRINTABLE GENERATOR
 elif selected_id == "tax_inv":
-    tab1, tab2 = st.tabs(["📝 สร้างใบกำกับภาษีใหม่", "📋 คลังเอกสาร & พิมพ์ e-Tax Invoice"])
+    tab1, tab2, tab3 = st.tabs(["📝 สร้างใบกำกับภาษีใหม่", "📋 คลังเอกสาร e-Tax Invoice", "🖨️ ตัวอย่างใบกำกับภาษีสำหรับพิมพ์"])
+    
     with tab1:
         with st.form("new_inv_form_v3"):
             c1, c2 = st.columns(2)
@@ -906,10 +944,63 @@ elif selected_id == "tax_inv":
                     st.success(f"ลบเอกสาร {del_doc_no} ออกจากระบบเรียบร้อยแล้ว!")
                     st.rerun()
 
+    with tab3:
+        st.subheader("🖨️ แสดงผลใบกำกับภาษีอิเล็กทรอนิกส์ (Printable e-Tax Invoice)")
+        conn = get_db_connection()
+        df_sales_preview = pd.read_sql_query("SELECT * FROM sales ORDER BY id DESC", conn)
+        conn.close()
+        
+        if not df_sales_preview.empty:
+            sel_doc_p = st.selectbox("เลือกเอกสารที่ต้องการพิมพ์:", df_sales_preview["doc_no"].tolist())
+            matched_inv = df_sales_preview[df_sales_preview["doc_no"] == sel_doc_p].iloc[0]
+            
+            st.markdown(f"""
+            <div style="background: #FFFFFF; border: 2px solid #0F172A; padding: 32px; border-radius: 12px; margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0F172A; padding-bottom: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h2 style="margin:0; color:#0F172A; font-weight:800;">🏛️ บริษัท แท็กซ์เมท เอ็นเตอร์ไพรส์ จำกัด</h2>
+                        <div style="font-size:13px; color:#475569; margin-top:4px;">123 อาคารสยามทาวเวอร์ ชั้น 18 ถ.พญาไท แขวงปทุมวัน เขตปทุมวัน กรุงเทพฯ 10330<br>เลขประจำตัวผู้เสียภาษี: 0105566099881 (สำนักงานใหญ่)</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <h3 style="margin:0; color:#2563EB; font-weight:800;">ใบกำกับภาษี / ใบเสร็จรับเงิน</h3>
+                        <div style="font-size:14px; font-weight:700; color:#0F172A;">เลขที่: {matched_inv['doc_no']}</div>
+                        <div style="font-size:13px; color:#64748B;">วันที่: {matched_inv['created_at']}</div>
+                    </div>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <strong>ชื่อผู้ซื้อ / ลูกค้า:</strong> {matched_inv['customer']}<br>
+                    <strong>สาขาที่ทำรายการ:</strong> {matched_inv['branch']} | <strong>วิธีชำระเงิน:</strong> {matched_inv['payment_method']}
+                </div>
+                <table style="width:100%; border-collapse: collapse; margin-bottom:20px;">
+                    <thead>
+                        <tr style="background:#F1F5F9; border-bottom:1px solid #CBD5E1; text-align:left;">
+                            <th style="padding:10px;">ลำดับ</th>
+                            <th style="padding:10px;">รายการสินค้า / บริการ</th>
+                            <th style="padding:10px; text-align:right;">จำนวนเงิน (บาท)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding:10px; border-bottom:1px solid #E2E8F0;">1</td>
+                            <td style="padding:10px; border-bottom:1px solid #E2E8F0;">บริการซอฟต์แวร์และฮาร์ดแวร์ระบบสารสนเทศ ERP</td>
+                            <td style="padding:10px; border-bottom:1px solid #E2E8F0; text-align:right;">฿{matched_inv['amount']:,.2f}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="display:flex; justify-content: flex-end;">
+                    <div style="width:320px; line-height:2.0;">
+                        <div style="display:flex; justify-space-between;"><span>มูลค่าก่อนภาษี:</span><strong>฿{matched_inv['amount']:,.2f}</strong></div>
+                        <div style="display:flex; justify-space-between;"><span>ภาษีมูลค่าเพิ่ม (VAT 7%):</span><strong>฿{matched_inv['tax']:,.2f}</strong></div>
+                        <div style="display:flex; justify-space-between; border-top:2px solid #0F172A; padding-top:4px; font-size:18px; color:#2563EB;"><span>จำนวนเงินรวมทั้งสิ้น:</span><strong>฿{matched_inv['total']:,.2f}</strong></div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
-# MODULE 4: POS SYSTEM
+
+# MODULE 4: POS SYSTEM & THERMAL RECEIPT GENERATOR
 elif selected_id == "pos":
-    col1, col2 = st.columns([1.8, 1.2])
+    col1, col2 = st.columns([1.6, 1.4])
     conn = get_db_connection()
     df_p = pd.read_sql_query("SELECT * FROM products", conn)
     conn.close()
@@ -930,10 +1021,11 @@ elif selected_id == "pos":
                     """, unsafe_allow_html=True)
 
     with col2:
-        st.subheader("💳 ชำระเงิน & ตัดสต็อก Real-time")
+        st.subheader("💳 ตะกร้าสินค้า & ใบเสร็จความร้อน (Thermal 80mm)")
         items_list = df_p["name"].tolist() if not df_p.empty else ["ไม่มีสินค้า"]
         sel_item = st.selectbox("เลือกรายการสินค้าสั่งซื้อ", items_list)
         qty = st.number_input("จำนวนที่ต้องการ", min_value=1, value=1)
+        discount_code = st.text_input("โค้ดส่วนลดพิเศษ (Optional):", value="TAX2026")
         pay_type = st.radio("ช่องทางชำระเงิน", ["PromptPay QR", "เงินสด", "บัตรเครดิต EDC"])
         
         if not df_p.empty and sel_item in df_p["name"].values:
@@ -943,15 +1035,33 @@ elif selected_id == "pos":
             prod_id = matched_prod["id"]
             
             subtotal = unit_p * qty
-            vat_val = subtotal * 0.07
-            grand_total = subtotal + vat_val
+            disc_amt = 500.0 if discount_code == "TAX2026" else 0.0
+            net_before_tax = max(0.0, subtotal - disc_amt)
+            vat_val = net_before_tax * 0.07
+            grand_total = net_before_tax + vat_val
             
-            st.divider()
-            st.write(f"มูลค่าสินค้า: **฿{subtotal:,.2f}**")
-            st.write(f"ภาษี VAT 7%: **฿{vat_val:,.2f}**")
-            st.markdown(f"### ยอดชำระสุทธิ: <span style='color: #2563EB;'>฿{grand_total:,.2f}</span>", unsafe_allow_html=True)
+            st.markdown('<div class="receipt-paper">', unsafe_allow_html=True)
+            st.markdown(f"""
+            <div style="text-align:center;">
+                <strong>=== TAXMATE POS STORE ===</strong><br>
+                สาขา: สำนักงานใหญ่ (0000)<br>
+                วันที่: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}
+            </div>
+            ----------------------------------------<br>
+            รายการ: {sel_item}<br>
+            จำนวน: {qty} x ฿{unit_p:,.2f}<br>
+            ส่วนลดโค้ด ({discount_code}): -฿{disc_amt:,.2f}<br>
+            ภาษีมูลค่าเพิ่ม (VAT 7%): ฿{vat_val:,.2f}<br>
+            ----------------------------------------<br>
+            <strong>ยอดชำระสุทธิ: ฿{grand_total:,.2f}</strong><br>
+            ชำระโดย: {pay_type}<br>
+            ----------------------------------------<br>
+            <div style="text-align:center;">ขอบคุณที่ใช้บริการค่ะ / Thank you</div>
+            """, unsafe_allow_html=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
             
-            if st.button("✅ ยืนยันชำระเงิน & ตัดสต็อก", type="primary", use_container_width=True):
+            if st.button("✅ ยืนยันชำระเงิน & พิมพ์ใบเสร็จ", type="primary", use_container_width=True):
                 if qty > curr_stock:
                     st.error(f"สินค้าในสต็อกมีไม่พอ (คงเหลือเพียง {curr_stock} ชิ้น)")
                 else:
@@ -963,7 +1073,7 @@ elif selected_id == "pos":
                         cursor.execute("""
                         INSERT INTO sales (doc_no, customer, amount, tax, total, status, branch, payment_method)
                         VALUES (?, 'ลูกค้าหน้าร้าน POS', ?, ?, ?, 'ชำระแล้ว', 'สำนักงานใหญ่', ?)
-                        """, (pos_doc_no, subtotal, vat_val, grand_total, pay_type))
+                        """, (pos_doc_no, net_before_tax, vat_val, grand_total, pay_type))
                         conn.commit()
                         conn.close()
                         
@@ -975,7 +1085,7 @@ elif selected_id == "pos":
                         st.error(f"เกิดข้อผิดพลาดในการตัดสต็อก: {str(e)}")
 
 
-# MODULE 5: INVENTORY MANAGEMENT (WITH DELETE SYSTEM)
+# MODULE 5: INVENTORY MANAGEMENT
 elif selected_id == "inv":
     conn = get_db_connection()
     df_products = pd.read_sql_query("SELECT * FROM products", conn)
@@ -1025,7 +1135,7 @@ elif selected_id == "inv":
                     st.rerun()
 
 
-# MODULE 6: HR & PAYROLL (WITH DELETE SYSTEM)
+# MODULE 6: HR & PAYROLL
 elif selected_id == "hr":
     conn = get_db_connection()
     df_emp = pd.read_sql_query("SELECT * FROM employees", conn)
@@ -1052,15 +1162,25 @@ elif selected_id == "hr":
     st.subheader("💸 สรุปงบประมาณการจ่ายเงินเดือนและภาษีหัก ณ ที่จ่าย (ภ.ง.ด.1)")
     total_payroll = df_emp["salary"].sum() if not df_emp.empty else 0.0
     wht1_est = total_payroll * 0.03
+    sso_est = len(df_emp) * 750.0
     
     c1, c2, c3 = st.columns(3)
     c1.metric("ยอดจ่ายเงินเดือนรวมทั้งองค์กร", f"฿{total_payroll:,.2f}")
-    c2.metric("จำนวนพนักงานปฏิบัติการ", f"{len(df_emp)} คน")
+    c2.metric("ประมาณการประกันสังคม (SSO 5%)", f"฿{sso_est:,.2f}")
     c3.metric("ประมาณการ ภ.ง.ด.1 นำส่ง", f"฿{wht1_est:,.2f}")
 
 
-# MODULE 7: FINANCIAL ANALYTICS
+# MODULE 7: FINANCIAL HEALTH RATIOS
 elif selected_id == "fin_ana":
+    st.subheader("📈 วิเคราะห์อัตราส่วนทางการเงินและดรรชนีสุขภาพองค์กร (Financial Health Index)")
+    
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("อัตราส่วนสภาพคล่อง (Current Ratio)", "2.45 เท่า", "🟢 สภาพคล่องสูง")
+    c2.metric("หนี้สินต่อทุน (D/E Ratio)", "0.38 เท่า", "🟢 ความเสี่ยงต่ำ")
+    c3.metric("ผลตอบแทนต่อส่วนผู้ถือหุ้น (ROE)", "18.4%", "+2.1%")
+    c4.metric("อัตรากำไรขั้นต้น (Gross Margin)", "62.5%", "🟢 ระดับสูง")
+    
+    st.divider()
     st.subheader("📊 วิเคราะห์งบกำไรขาดทุน (Income Statement Deep-Dive)")
     conn = get_db_connection()
     df_sales = pd.read_sql_query("SELECT * FROM sales", conn)
@@ -1099,7 +1219,25 @@ elif selected_id == "tax_alert":
         st.success("ข้อความทดสอบส่งเข้ากลุ่ม LINE ผู้บริหารเรียบร้อยแล้ว!")
 
 
-# MODULE 9: LOGISTICS
+# MODULE 9: MULTI-CURRENCY TRADE
+elif selected_id == "fx_trade":
+    st.subheader("💱 แปลงอัตราแลกเปลี่ยนเงินตราต่างประเทศ (Foreign Trade Calculator)")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        foreign_amount = st.number_input("จำนวนเงินสกุลต่างประเทศ:", min_value=0.0, value=10000.0)
+        currency = st.selectbox("เลือกสกุลเงิน:", ["USD (ดอลลาร์สหรัฐ)", "EUR (ยูโร)", "JPY (เยนญี่ปุ่น)", "CNY (หยวนจีน)"])
+        
+        rates = {"USD": 36.5, "EUR": 39.8, "JPY": 0.24, "CNY": 5.1}
+        curr_code = currency.split(" ")[0]
+        thb_val = foreign_amount * rates[curr_code]
+        
+    with col2:
+        st.info(f"อัตราแลกเปลี่ยนอ้างอิง: **1 {curr_code} = {rates[curr_code]} THB**")
+        st.markdown(f"### คำนวณเป็นเงินบาท: <span style='color: #2563EB;'>฿{thb_val:,.2f} THB</span>", unsafe_allow_html=True)
+
+
+# MODULE 10: LOGISTICS
 elif selected_id == "logistics":
     st.subheader("📦 ตารางติดตามสถานะการจัดส่งพัสดุ (Tracking Engine)")
     logi_df = pd.DataFrame([
@@ -1109,7 +1247,7 @@ elif selected_id == "logistics":
     st.table(logi_df)
 
 
-# MODULE 10: MANUFACTURING ERP
+# MODULE 11: MANUFACTURING ERP
 elif selected_id == "mfg":
     st.subheader("🛠️ สูตรโครงสร้างการผลิต (Bill of Materials - BOM)")
     bom_df = pd.DataFrame([
@@ -1119,7 +1257,7 @@ elif selected_id == "mfg":
     st.table(bom_df)
 
 
-# MODULE 11: CRM
+# MODULE 12: CRM
 elif selected_id == "crm":
     st.subheader("🎯 ไปป์ไลน์โอกาสทางการขาย (Sales Pipeline)")
     crm_df = pd.DataFrame([
@@ -1129,7 +1267,7 @@ elif selected_id == "crm":
     st.table(crm_df)
 
 
-# MODULE 12: PROCUREMENT
+# MODULE 13: PROCUREMENT
 elif selected_id == "procurement":
     st.subheader("🛒 ใบสั่งซื้อสินค้า (Purchase Orders - PO)")
     po_df = pd.DataFrame([
@@ -1138,7 +1276,7 @@ elif selected_id == "procurement":
     st.table(po_df)
 
 
-# MODULE 13: AUDIT TRAIL
+# MODULE 14: AUDIT TRAIL
 elif selected_id == "audit":
     conn = get_db_connection()
     df_logs = pd.read_sql_query("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 50", conn)
@@ -1147,7 +1285,7 @@ elif selected_id == "audit":
     st.dataframe(df_logs, use_container_width=True)
 
 
-# MODULE 14: AR/AP SYSTEM
+# MODULE 15: AR/AP SYSTEM
 elif selected_id == "arap":
     c1, c2 = st.columns(2)
     with c1:
@@ -1158,7 +1296,7 @@ elif selected_id == "arap":
         st.metric("ยอดเจ้าหนี้ถึงกำหนดชำระ", "฿65,000.00")
 
 
-# MODULE 15: ASSET MANAGEMENT
+# MODULE 16: ASSET MANAGEMENT
 elif selected_id == "asset":
     st.subheader("💻 ทะเบียนสินทรัพย์คงทนและการคำนวณค่าเสื่อมราคา")
     asset_df = pd.DataFrame([
@@ -1167,7 +1305,7 @@ elif selected_id == "asset":
     st.table(asset_df)
 
 
-# MODULE 16: E-DOCUMENT ARCHIVE
+# MODULE 17: E-DOCUMENT ARCHIVE
 elif selected_id == "edoc":
     st.subheader("📤 ระบบจัดเก็บเอกสารสำคัญอิเล็กทรอนิกส์")
     up_f = st.file_uploader("เลือกไฟล์สแกนใบเสร็จ/สัญญาเพื่อแนบเข้าคลังระบบ", type=["pdf", "png", "jpg"])
@@ -1175,7 +1313,7 @@ elif selected_id == "edoc":
         st.success(f"จัดเก็บเอกสาร {up_f.name} เข้าสู่ระบบฐานข้อมูลเรียบร้อยแล้ว!")
 
 
-# MODULE 17: VAT REPORT
+# MODULE 18: VAT REPORT
 elif selected_id == "vat":
     conn = get_db_connection()
     df_sales = pd.read_sql_query("SELECT * FROM sales", conn)
@@ -1191,7 +1329,7 @@ elif selected_id == "vat":
     c3.metric("3. ภาษีที่ต้องนำส่งสุทธิ", f"฿{net_vat:,.2f}")
 
 
-# MODULE 18: WHT REPORT
+# MODULE 19: WHT REPORT
 elif selected_id == "wht":
     st.subheader("📑 สรุปภาษีหัก ณ ที่จ่าย (ภ.ง.ด.3 / ภ.ง.ด.53)")
     wht_df = pd.DataFrame([
@@ -1201,7 +1339,7 @@ elif selected_id == "wht":
     st.table(wht_df)
 
 
-# MODULE 19: MULTI-BRANCH
+# MODULE 20: MULTI-BRANCH
 elif selected_id == "branch":
     conn = get_db_connection()
     df_branch = pd.read_sql_query("SELECT branch, SUM(total) as total_sales FROM sales GROUP BY branch", conn)
@@ -1210,11 +1348,12 @@ elif selected_id == "branch":
     st.dataframe(df_branch, use_container_width=True)
 
 
-# MODULE 20: SYSTEM SETTINGS, ANNOUNCEMENTS & AUDIT LOGS
+# MODULE 21: SYSTEM SETTINGS, BACKUP & AUDIT LOGS
 elif selected_id == "setting":
-    tab_users, tab_announcements, tab_audit_history = st.tabs([
+    tab_users, tab_announcements, tab_backup, tab_audit_history = st.tabs([
         "👤 จัดการผู้ใช้งานระบบ", 
         "📢 ศูนย์จัดการประกาศสำคัญองค์กร", 
+        "💾 สำรองข้อมูล (Backup Database)",
         "📜 ประวัติการใช้งานระบบทั้งหมด (Audit Logs)"
     ])
     
@@ -1250,7 +1389,7 @@ elif selected_id == "setting":
             st.divider()
             if st.button("🔄 รีเซ็ตและซ่อมแซมโครงสร้างฐานข้อมูลอัตโนมัติ (Force Auto-Repair Engine)"):
                 init_db_v3()
-                st.success("ซ่อมแซมและตรวจสอบโครงสร้างฐานข้อมูล SQLite v3.0 สำเร็จ 100%!")
+                st.success("ซ่อมแซมและตรวจสอบโครงสร้างฐานข้อมูล SQLite v4.0 สำเร็จ 100%!")
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในการตั้งค่าระบบ: {str(e)}")
 
@@ -1317,7 +1456,24 @@ elif selected_id == "setting":
         except Exception as e:
             st.error(f"เกิดข้อผิดพลาดในการโหลดตารางประกาศ: {str(e)}")
 
-    # TAB 3: FULL SYSTEM AUDIT LOGS HISTORY
+    # TAB 3: BACKUP DATABASE
+    with tab_backup:
+        st.subheader("💾 ดาวน์โหลดไฟล์สำรองฐานข้อมูลระบบ (Database Backup Engine)")
+        try:
+            with open(DB_FILE, "rb") as f:
+                db_bytes = f.read()
+            st.download_button(
+                label="📥 ดาวน์โหลดไฟล์ฐานข้อมูล SQLite (.db)",
+                data=db_bytes,
+                file_name=f"TaxMate_ERP_Backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}.db",
+                mime="application/octet-stream",
+                type="primary"
+            )
+            st.info("แนะนำให้ทำการดาวน์โหลดไฟล์สำรองฐานข้อมูลเป็นประจำเพื่อความปลอดภัยของข้อมูลองค์กร")
+        except Exception as e:
+            st.error(f"เกิดข้อผิดพลาดในการอ่านไฟล์ฐานข้อมูล: {str(e)}")
+
+    # TAB 4: FULL SYSTEM AUDIT LOGS HISTORY
     with tab_audit_history:
         st.subheader("📜 ประวัติการใช้งานและกิจกรรมในระบบทั้งหมด (Full System Audit Logs)")
         try:
