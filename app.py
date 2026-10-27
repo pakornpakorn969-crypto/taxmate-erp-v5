@@ -106,6 +106,17 @@ st.markdown("""
         box-shadow: 0 20px 30px -10px rgba(37, 99, 235, 0.15);
         border-color: #93C5FD;
     }
+    .feature-card-link,
+    .feature-card-link:visited {
+        display: block;
+        color: inherit;
+        text-decoration: none;
+    }
+    .feature-card-link:focus-visible {
+        outline: 3px solid #2563EB;
+        outline-offset: 4px;
+        border-radius: 22px;
+    }
     .feature-card-3d b {
         color: #1D4ED8;
         display: block;
@@ -489,6 +500,31 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
     st.session_state.user = None
 
+COVER_MODULE_IDS = {"exec", "tax_inv", "branch", "inv", "hr", "approval"}
+
+
+def get_cover_module_request():
+    if hasattr(st, "query_params"):
+        module_id = st.query_params.get("module")
+    else:
+        module_values = st.experimental_get_query_params().get("module", [])
+        module_id = module_values[0] if module_values else None
+    return module_id if module_id in COVER_MODULE_IDS else None
+
+
+def clear_cover_module_request():
+    if hasattr(st, "query_params"):
+        if "module" in st.query_params:
+            del st.query_params["module"]
+    else:
+        params = st.experimental_get_query_params()
+        if "module" in params:
+            params.pop("module")
+            st.experimental_set_query_params(**params)
+
+
+requested_module_id = get_cover_module_request()
+
 if not st.session_state.authenticated:
     with st.sidebar:
         st.markdown("""
@@ -498,7 +534,12 @@ if not st.session_state.authenticated:
         </div>
         """, unsafe_allow_html=True)
         
-        init_nav = st.radio("📍 เมนูระบบ:", ["🏠 หน้าแรก (Overview)", "🔑 เข้าสู่ระบบ"], key="radio_init_nav")
+        init_nav = st.radio(
+            "📍 เมนูระบบ:",
+            ["🏠 หน้าแรก (Overview)", "🔑 เข้าสู่ระบบ"],
+            index=1 if requested_module_id else 0,
+            key=f"radio_init_nav_{requested_module_id or 'default'}",
+        )
         st.divider()
         st.caption("🟢 สถานะเซิร์ฟเวอร์: ออนไลน์ 24/7 (Cloud Engine)")
 
@@ -520,70 +561,82 @@ if not st.session_state.authenticated:
         col3d_1, col3d_2, col3d_3 = st.columns(3)
         with col3d_1:
             st.markdown("""
-            <div class="feature-card-3d">
-                <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
-                    <img src="https://img.icons8.com/isometric/120/bar-chart.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="AI Forecast">
+            <a class="feature-card-link" href="?module=exec" aria-label="เปิดระบบ AI Financial Forecast" title="เปิดระบบ AI Financial Forecast">
+                <div class="feature-card-3d">
+                    <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
+                        <img src="https://img.icons8.com/isometric/120/bar-chart.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="AI Forecast">
+                    </div>
+                    <b>📊 AI Financial Forecast</b>
+                    <span style="font-size: 13.5px; color: #475569;">วิเคราะห์แนวโน้มรายได้ คาดการณ์สุขภาพทางการเงิน 6 เดือนข้างหน้าด้วย Plotly Interactive Engine</span>
                 </div>
-                <b>📊 AI Financial Forecast</b>
-                <span style="font-size: 13.5px; color: #475569;">วิเคราะห์แนวโน้มรายได้ คาดการณ์สุขภาพทางการเงิน 6 เดือนข้างหน้าด้วย Plotly Interactive Engine</span>
-            </div>
+            </a>
             """, unsafe_allow_html=True)
             
         with col3d_2:
             st.markdown("""
-            <div class="feature-card-3d">
-                <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
-                    <img src="https://img.icons8.com/isometric/120/qr-code.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="e-Tax QR">
+            <a class="feature-card-link" href="?module=tax_inv" aria-label="เปิดระบบ e-Tax" title="เปิดระบบ e-Tax">
+                <div class="feature-card-3d">
+                    <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
+                        <img src="https://img.icons8.com/isometric/120/qr-code.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="e-Tax QR">
+                    </div>
+                    <b>🧾 e-Tax & Dynamic QR</b>
+                    <span style="font-size: 13.5px; color: #475569;">ออกใบกำกับภาษีมาตรฐานกรมสรรพากร และสร้าง Dynamic PromptPay QR Code รับชำระเงินทันที</span>
                 </div>
-                <b>🧾 e-Tax & Dynamic QR</b>
-                <span style="font-size: 13.5px; color: #475569;">ออกใบกำกับภาษีมาตรฐานกรมสรรพากร และสร้าง Dynamic PromptPay QR Code รับชำระเงินทันที</span>
-            </div>
+            </a>
             """, unsafe_allow_html=True)
             
         with col3d_3:
             st.markdown("""
-            <div class="feature-card-3d">
-                <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
-                    <img src="https://img.icons8.com/isometric/120/organization.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="Multi-Branch">
+            <a class="feature-card-link" href="?module=branch" aria-label="เปิดระบบ Multi-Branch Matrix" title="เปิดระบบ Multi-Branch Matrix">
+                <div class="feature-card-3d">
+                    <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
+                        <img src="https://img.icons8.com/isometric/120/organization.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="Multi-Branch">
+                    </div>
+                    <b>🌐 Multi-Branch Matrix</b>
+                    <span style="font-size: 13.5px; color: #475569;">เชื่อมโยงข้อมูลหลายสาขา โอนย้ายสต็อกข้ามสาขา และจัดหมวดหมู่พนักงานแบบ Centralized View</span>
                 </div>
-                <b>🌐 Multi-Branch Matrix</b>
-                <span style="font-size: 13.5px; color: #475569;">เชื่อมโยงข้อมูลหลายสาขา โอนย้ายสต็อกข้ามสาขา และจัดหมวดหมู่พนักงานแบบ Centralized View</span>
-            </div>
+            </a>
             """, unsafe_allow_html=True)
 
         # Row 2
         col3d_4, col3d_5, col3d_6 = st.columns(3)
         with col3d_4:
             st.markdown("""
-            <div class="feature-card-3d">
-                <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
-                    <img src="https://img.icons8.com/isometric/120/box.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="Inventory WMS">
+            <a class="feature-card-link" href="?module=inv" aria-label="เปิดระบบ Smart Inventory WMS" title="เปิดระบบ Smart Inventory WMS">
+                <div class="feature-card-3d">
+                    <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
+                        <img src="https://img.icons8.com/isometric/120/box.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="Inventory WMS">
+                    </div>
+                    <b>📦 Smart Inventory WMS</b>
+                    <span style="font-size: 13.5px; color: #475569;">บริหารคลังสินค้า ตรวจสอบ SKU แจ้งเตือนสินค้าใกล้หมดสต็อก และติดตามการเคลื่อนย้ายสินค้า</span>
                 </div>
-                <b>📦 Smart Inventory WMS</b>
-                <span style="font-size: 13.5px; color: #475569;">บริหารคลังสินค้า ตรวจสอบ SKU แจ้งเตือนสินค้าใกล้หมดสต็อก และติดตามการเคลื่อนย้ายสินค้า</span>
-            </div>
+            </a>
             """, unsafe_allow_html=True)
 
         with col3d_5:
             st.markdown("""
-            <div class="feature-card-3d">
-                <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
-                    <img src="https://img.icons8.com/isometric/120/user-male-circle.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="HR Payroll">
+            <a class="feature-card-link" href="?module=hr" aria-label="เปิดระบบ HR & Payroll" title="เปิดระบบ HR & Payroll">
+                <div class="feature-card-3d">
+                    <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
+                        <img src="https://img.icons8.com/isometric/120/user-male-circle.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="HR Payroll">
+                    </div>
+                    <b>👥 HR & Payroll Automation</b>
+                    <span style="font-size: 13.5px; color: #475569;">จัดการข้อมูลบุคลากร คำนวณเงินเดือน เงินปันผล และสวัสดิการพนักงานในระบบอัตโนมัติ</span>
                 </div>
-                <b>👥 HR & Payroll Automation</b>
-                <span style="font-size: 13.5px; color: #475569;">จัดการข้อมูลบุคลากร คำนวณเงินเดือน เงินปันผล และสวัสดิการพนักงานในระบบอัตโนมัติ</span>
-            </div>
+            </a>
             """, unsafe_allow_html=True)
 
         with col3d_6:
             st.markdown("""
-            <div class="feature-card-3d">
-                <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
-                    <img src="https://img.icons8.com/isometric/120/shield.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="Security Approval">
+            <a class="feature-card-link" href="?module=approval" aria-label="เปิดระบบ E-Approval" title="เปิดระบบ E-Approval">
+                <div class="feature-card-3d">
+                    <div style="text-align: center; margin-bottom: 12px; height: 85px; display: flex; align-items: center; justify-content: center;">
+                        <img src="https://img.icons8.com/isometric/120/shield.png" width="80" style="filter: drop-shadow(0 10px 15px rgba(37,99,235,0.2));" alt="Security Approval">
+                    </div>
+                    <b>🛡️ E-Approval & Audit Trail</b>
+                    <span style="font-size: 13.5px; color: #475569;">ระบบขออนุมัติเอกสารสั่งซื้อ (PO) และบันทึก Audit Logs ตรวจสอบกิจกรรมผู้ใช้อย่างเข้มงวด</span>
                 </div>
-                <b>🛡️ E-Approval & Audit Trail</b>
-                <span style="font-size: 13.5px; color: #475569;">ระบบขออนุมัติเอกสารสั่งซื้อ (PO) และบันทึก Audit Logs ตรวจสอบกิจกรรมผู้ใช้อย่างเข้มงวด</span>
-            </div>
+            </a>
             """, unsafe_allow_html=True)
 
         render_announcements()
@@ -629,6 +682,9 @@ if not st.session_state.authenticated:
                                 else:
                                     st.session_state.authenticated = True
                                     st.session_state.user = user_dict
+                                    if requested_module_id:
+                                        st.session_state.cover_target_module = requested_module_id
+                                        clear_cover_module_request()
                                     log_audit_action(user_dict.get('full_name'), "เข้าสู่ระบบสำเร็จ")
                                     st.success(f"ยินดีต้อนรับคุณ {user_dict.get('full_name')} เข้าสู่ระบบ")
                                     st.rerun()
@@ -784,6 +840,19 @@ ALL_MODULES = [
 allowed_list = [m for m in ALL_MODULES if user_role in ["Admin", "Super Admin"] or user_role in m["roles"]]
 if not allowed_list:
     allowed_list = [ALL_MODULES[4]]
+
+cover_target_module = st.session_state.pop("cover_target_module", None)
+cover_target = next(
+    (module for module in allowed_list if module["id"] == cover_target_module),
+    None,
+)
+if cover_target:
+    st.session_state["radio_module_nav"] = cover_target["title"]
+elif cover_target_module:
+    st.session_state.cover_target_denied = True
+
+if st.session_state.pop("cover_target_denied", False):
+    st.warning("บัญชีนี้ไม่มีสิทธิ์ใช้โมดูลที่เลือกจากหน้าปก กรุณาเลือกโมดูลจากเมนูที่ได้รับสิทธิ์")
 
 with st.sidebar:
     st.markdown(f"""

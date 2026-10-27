@@ -5,3 +5,5 @@ plotly
 requests
 psycopg2-binary
 sqlalchemy
+opencv-python-headless
+pillow
